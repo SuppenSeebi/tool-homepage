@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from .tools.CharCounter import *
+from .tools import CharCounter
 
 app = FastAPI()
 
