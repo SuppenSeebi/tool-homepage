@@ -1,35 +1,71 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import CharCounter from './tools/CharCounter';
+import PdfMerger from './tools/PdfMerger';
+
+const tools = [
+  {
+    path: '/charcounter',
+    name: 'Character Counter',
+    description: 'Zählt die Anzahl der Zeichen in deinem Text.',
+    component: <CharCounter />
+  },
+  {
+    path: '/pdfmerger',
+    name: 'PDF Merger',
+    description: 'Fügt mehrere PDFs zu einer einzigen Datei zusammen.',
+    component: <PdfMerger />
+  },
+  // ➕ weitere Tools kannst du hier einfach ergänzen
+];
 
 function App() {
-  const [count, setCount] = useState(0)
-
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
+    <Router>
+      <div style={styles.container}>
+        <h1>Meine Tools</h1>
+        <Routes>
+          <Route
+            path="/"
+            element={
+              <div style={styles.grid}>
+                {tools.map((tool) => (
+                  <Link to={tool.path} key={tool.path} style={styles.card}>
+                    <h2>{tool.name}</h2>
+                    <p>{tool.description}</p>
+                  </Link>
+                ))}
+              </div>
+            }
+          />
+          {tools.map((tool) => (
+            <Route path={tool.path} element={tool.component} key={tool.path} />
+          ))}
+        </Routes>
       </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    </Router>
+  );
 }
 
-export default App
+const styles = {
+  container: {
+    padding: '20px',
+    fontFamily: 'sans-serif',
+  },
+  grid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))',
+    gap: '20px',
+  },
+  card: {
+    display: 'block',
+    padding: '20px',
+    border: '1px solid #ccc',
+    borderRadius: '8px',
+    textDecoration: 'none',
+    color: 'black',
+    backgroundColor: '#f9f9f9',
+    transition: 'transform 0.2s',
+  },
+};
+
+export default App;
