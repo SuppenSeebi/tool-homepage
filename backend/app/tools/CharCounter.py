@@ -6,8 +6,8 @@ router = APIRouter()
 class TextInput(BaseModel):
     text: str
 
-@router.post("/charcounter")
-async def char_counter(data: TextInput):
+@router.post("/CharCounter")
+async def CharCounter(data: TextInput):
     text = data.text
     encoded = text.encode('utf-8')
     
