@@ -7,7 +7,7 @@ class TextInput(BaseModel):
     text: str
 
 @router.post("/CharCounter")
-async def CharCounter(data: TextInput):
+async def CharCounterFunc(data: TextInput):
     text = data.text
     encoded = text.encode('utf-8')
     
