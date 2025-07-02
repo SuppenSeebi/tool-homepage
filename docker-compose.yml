@@ -12,5 +12,5 @@ services:
     build: ./frontend
     container_name: mytools-frontend
     ports:
-      - "80:80"
+      - "22332:80"
     restart: always
