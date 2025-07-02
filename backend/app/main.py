@@ -1,16 +1,18 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from tools import CharCounter
+
 app = FastAPI()
 
+# CORS Middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # später Frontend Domain setzen
+    allow_origins=["*"],  # spezifiziere Domains in Produktion
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-@app.get("/api/hello")
-def read_root():
-    return {"message": "Hello from FastAPI"}
+# Tool Routen einbinden
+app.include_router(CharCounter.router, prefix="/api")
