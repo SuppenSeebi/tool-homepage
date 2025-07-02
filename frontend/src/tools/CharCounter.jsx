@@ -5,7 +5,7 @@ function CharCounter() {
   const [result, setResult] = useState(null);
 
   const handleCount = async () => {
-    const response = await fetch('http://192.168.178.54:8000/app/CharCounter', {
+    const response = await fetch('http://tool.sschw.dev:8000/app/CharCounter', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text }),
