@@ -5,7 +5,7 @@ function CharCounter() {
   const [result, setResult] = useState(null);
 
   const handleCount = async () => {
-    const response = await fetch('http://backend:8000/api/charcounter', {
+    const response = await fetch('http://localhost:8000/api/charcounter', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text }),
