@@ -4,7 +4,7 @@ import PdfMerger from './tools/PdfMerger';
 
 const tools = [
   {
-    path: '/charcounter',
+    path: '/CharCounter',
     name: 'Character Counter',
     description: 'Zählt die Anzahl der Zeichen in deinem Text.',
     component: <CharCounter />
