@@ -15,4 +15,4 @@ app.add_middleware(
 )
 
 # Tool Routen einbinden
-app.include_router(CharCounter.router, prefix="/api")
+app.include_router(CharCounter.router, prefix="/app")
