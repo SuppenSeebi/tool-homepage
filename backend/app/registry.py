@@ -19,7 +19,14 @@ from fastapi import FastAPI, HTTPException
 TOOLS_PACKAGE = "app.tools"
 TOOLS_DIR = Path(__file__).parent / "tools"
 
-REQUIRED_META_KEYS = {"id", "name", "description", "tags", "language", "runtime", "sandbox", "dependencies"}
+REQUIRED_META_KEYS = {
+    "id", "name", "description", "tags", "language", "runtime", "sandbox", "dependencies",
+    # A working example request body for this tool's POST /run - the generic Run UI (same form
+    # for every tool, since every tool shares one JSON-in/JSON-out contract) has no other way to
+    # know a given tool's expected input shape. Required, not optional, so this can't quietly be
+    # skipped for a future tool - found the hard way when json-formatter shipped without one.
+    "example",
+}
 
 # id -> {**META, "_source_file": <path>} - the source file path is kept out of list_tools()'s
 # output (that's not something the tag/language grouping view needs), only used by get_source().

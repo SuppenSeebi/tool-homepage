@@ -4,12 +4,39 @@ import { API_BASE } from './apiBase';
 
 const TABS = ['run', 'setup', 'source'];
 
+// FastAPI/Pydantic validation errors (422s - wrong request shape entirely, e.g. a missing
+// field) put an *array* of {loc, msg, ...} objects in `detail`, not a string - our own
+// HTTPException calls (e.g. json_formatter's "invalid JSON" error) put a plain string there.
+// Naively doing `new Error(detail)` on the array form stringifies each object to
+// "[object Object]", which is what actually happened here - not a problem with the input.
+function formatErrorDetail(detail) {
+    if (typeof detail === 'string') return detail;
+    if (Array.isArray(detail)) {
+        return detail
+            .map(d => {
+                if (typeof d === 'string') return d;
+                const loc = Array.isArray(d?.loc) ? d.loc.filter(part => part !== 'body').join('.') : '';
+                const msg = d?.msg ?? JSON.stringify(d);
+                return loc ? `${loc}: ${msg}` : msg;
+            })
+            .join('\n');
+    }
+    return JSON.stringify(detail);
+}
+
 // Every tool shares the exact same contract (POST /run, JSON in, JSON out - see
 // backend/app/registry.py), so this one generic form works for any tool with zero per-tool
 // frontend code. A tool wanting a friendlier field-by-field form is a future enhancement, not
 // something every new tool has to earn by also writing its own frontend page.
-function RunTab({ toolId }) {
-    const [input, setInput] = useState('{\n  \n}');
+//
+// `example` (from the tool's registry metadata, required per-tool - see registry.py) pre-fills
+// the input with a working request body, since the generic form has no other way to convey a
+// given tool's expected shape (e.g. json-formatter needs {"text": "..."}, not the JSON object
+// to format directly - there'd be nothing left to validate if it were already parsed).
+function RunTab({ toolId, example }) {
+    const [input, setInput] = useState(() =>
+        example !== undefined ? JSON.stringify(example, null, 2) : '{\n  \n}'
+    );
     const [output, setOutput] = useState(null);
     const [err, setErr] = useState(null);
     const [busy, setBusy] = useState(false);
@@ -31,7 +58,7 @@ function RunTab({ toolId }) {
                 body: JSON.stringify(body),
             });
             const data = await res.json();
-            if (!res.ok) throw new Error(data.detail || `HTTP ${res.status}`);
+            if (!res.ok) throw new Error(data.detail ? formatErrorDetail(data.detail) : `HTTP ${res.status}`);
             setOutput(data);
         } catch (e) {
             setErr(e.message);
@@ -129,7 +156,7 @@ function ToolDetail() {
                 ))}
             </div>
             <div className="tab-content">
-                {tab === 'run' && <RunTab toolId={tool.id} />}
+                {tab === 'run' && <RunTab toolId={tool.id} example={tool.example} />}
                 {tab === 'setup' && <SetupTab tool={tool} />}
                 {tab === 'source' && <SourceTab toolId={tool.id} />}
             </div>
