@@ -1,42 +1,113 @@
-#root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
+/* Functional scaffold only - this is Phase 1 (registry + generic tool UI), not the dark-HUD
+   visual redesign (Phase 3, see docs/redesign-plan.md). Deliberately plain. */
+
+.app-container {
+    max-width: 1000px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 2rem 1.5rem 4rem;
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+.muted { color: #888; }
+.error { color: #e5484d; white-space: pre-wrap; }
+
+.tool-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 1.25rem;
 }
 
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.tool-card {
+    display: block;
+    padding: 1.25rem;
+    border: 1px solid #333;
+    border-radius: 8px;
+    text-decoration: none;
+    color: inherit;
+    transition: border-color 0.15s;
+}
+.tool-card:hover { border-color: #646cff; }
+
+.tool-card-header, .tool-detail-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+}
+.tool-card-header h2, .tool-detail-header h2 { margin: 0; font-size: 1.1rem; }
+
+.lang-badge {
+    font-family: monospace;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 0.2em 0.55em;
+    border: 1px solid #646cff;
+    border-radius: 4px;
+    color: #a5aaff;
+    white-space: nowrap;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
+.tool-description { color: #b0b0b0; font-size: 0.92rem; }
+
+.tag-list { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.5rem; }
+.tag {
+    font-size: 0.72rem;
+    padding: 0.15em 0.5em;
+    border-radius: 999px;
+    background: #2a2a2a;
+    color: #ccc;
 }
 
-.card {
-  padding: 2em;
+.back-link {
+    display: inline-block;
+    margin-bottom: 1rem;
+    font-size: 0.9rem;
 }
 
-.read-the-docs {
-  color: #888;
+.tool-detail { text-align: left; }
+
+.tabs { display: flex; gap: 0.25rem; margin: 1.25rem 0 1rem; border-bottom: 1px solid #333; }
+.tab {
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    border-radius: 0;
+    padding: 0.5em 0.9em;
+    text-transform: capitalize;
+    color: #999;
 }
+.tab:hover { border-color: transparent; color: #ddd; }
+.tab-active { color: #fff; border-bottom-color: #646cff; }
+
+.run-tab { display: flex; flex-direction: column; gap: 0.6rem; align-items: flex-start; }
+.run-tab label { font-size: 0.85rem; color: #aaa; }
+.run-tab textarea {
+    width: 100%;
+    font-family: monospace;
+    font-size: 0.9rem;
+    background: #1a1a1a;
+    color: #eee;
+    border: 1px solid #333;
+    border-radius: 6px;
+    padding: 0.6em;
+}
+
+.output, .source-view {
+    width: 100%;
+    background: #1a1a1a;
+    border: 1px solid #333;
+    border-radius: 6px;
+    padding: 0.9em;
+    overflow-x: auto;
+    font-size: 0.85rem;
+}
+
+.setup-list {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: 0.4rem 1rem;
+    font-size: 0.9rem;
+}
+.setup-list dt { color: #888; }
+.setup-list dd { margin: 0; font-family: monospace; }

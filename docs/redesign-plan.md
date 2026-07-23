@@ -198,9 +198,11 @@ enforce the boundary regardless of what any prompt says.
 | # | Step | State |
 |---|---|---|
 | 0 | Write this doc | **Done** (2026-07-23) |
-| 1 | Backend: gateway + auto-discovery registry (Python tools in-process, contract designed for future non-Python tools per D.1) | Not started |
-| 2 | Build initial tool set — 4 tools per Section E, across 4 languages | Not started |
-| 3 | Frontend: dark-HUD redesign, tag-based grouping, language badge, setup view, source view (D.3) | Not started |
+| 1 | Backend: gateway + auto-discovery registry (Python tools in-process, contract designed for future non-Python tools per D.1) | **Done** (2026-07-23) — `backend/app/registry.py` scans `app/tools/*.py` for `ROUTER`+`META`, mounts each at `/app/tools/{id}`, exposes `GET /app/tools` and `GET /app/tools/{id}/source`. Old `CharCounter.py` removed (Sebastian: no need to keep the old ones). Verified via `TestClient` (real HTTP requests, not just import checks) against a proper `win-amd64` venv — the first local venv attempt used an MSYS2/MinGW Python with no compatible wheels for `pydantic-core` and had to be redone against a standard python.org install. Also added a root `.gitignore` (didn't exist before — caught by `__pycache__` showing up untracked). |
+| 1.5 | First tool proving the pattern: JSON Formatter (Python, in-process) | **Done** (2026-07-23) — `backend/app/tools/json_formatter.py`. Confirmed via `TestClient`: valid JSON formats correctly (key order preserved), invalid JSON returns a real 400 with a useful message. |
+| 2 | Remaining initial tool set — JWT Decoder (Node), QR Code Generator (Go), Hash Calculator (Rust), per Section E | Not started — these are the first real test of the polyglot contract (separate containers behind the gateway, per D.1), not just Python in-process |
+| 3a | Frontend: registry-driven functional scaffold — tag/language display, generic Run (JSON in/out, works for any tool via the shared contract) / Setup (auto-rendered from registry metadata) / Source (raw file content) tabs | **Done** (2026-07-23) — `App.jsx`, `ToolDetail.jsx`, `apiBase.js` (single configurable backend URL, replacing the literal that used to live inside `CharCounter.jsx`). Deliberately plain CSS — verified via `npm run build` + `npm run lint`, both clean. Old `CharCounter.jsx`/`PdfMerger.jsx` removed. |
+| 3b | Frontend: actual dark-HUD visual design pass on top of 3a's working scaffold | Not started |
 | 4 | Wire embed link from `landing-homepage`'s `CURRENT SYSTEM` header cell to the redesigned site | Not started |
 | 5 | Deploy to new CT | Blocked on Sebastian provisioning the CT (Section C) — can deploy to current host in the meantime if the CT isn't ready |
 | — | Roadmap item #3 (AI tool-authoring pipeline) | Deliberately deferred — Section F is the starting point when it begins |

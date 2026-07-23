@@ -1,71 +1,64 @@
+import { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
-import CharCounter from './tools/CharCounter';
-import PdfMerger from './tools/PdfMerger';
+import { API_BASE } from './apiBase';
+import ToolDetail from './ToolDetail';
+import './App.css';
 
-const tools = [
-  {
-    path: '/CharCounter',
-    name: 'Character Counter',
-    description: 'Zählt die Anzahl der Zeichen in deinem Text.',
-    component: <CharCounter />
-  },
-  {
-    path: '/pdfmerger',
-    name: 'PDF Merger',
-    description: 'Fügt mehrere PDFs zu einer einzigen Datei zusammen.',
-    component: <PdfMerger />
-  },
-  // ➕ weitere Tools kannst du hier einfach ergänzen
-];
-
-function App() {
-  return (
-    <Router>
-      <div style={styles.container}>
-        <h1>Meine Tools</h1>
-        <Routes>
-          <Route
-            path="/"
-            element={
-              <div style={styles.grid}>
-                {tools.map((tool) => (
-                  <Link to={tool.path} key={tool.path} style={styles.card}>
-                    <h2>{tool.name}</h2>
-                    <p>{tool.description}</p>
-                  </Link>
-                ))}
-              </div>
-            }
-          />
-          {tools.map((tool) => (
-            <Route path={tool.path} element={tool.component} key={tool.path} />
-          ))}
-        </Routes>
-      </div>
-    </Router>
-  );
+// Every tool card here comes from GET /app/tools (backend/app/registry.py) - nothing about a
+// specific tool is hardcoded on the frontend. Adding a tool is dropping one file into
+// backend/app/tools/; this page picks it up automatically on next load.
+function ToolCard({ tool }) {
+    return (
+        <Link to={`/tools/${tool.id}`} className="tool-card">
+            <div className="tool-card-header">
+                <h2>{tool.name}</h2>
+                <span className="lang-badge">{tool.language}</span>
+            </div>
+            <p className="tool-description">{tool.description}</p>
+            <div className="tag-list">
+                {tool.tags.map(tag => <span className="tag" key={tag}>{tag}</span>)}
+            </div>
+        </Link>
+    );
 }
 
-const styles = {
-  container: {
-    padding: '20px',
-    fontFamily: 'sans-serif',
-  },
-  grid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))',
-    gap: '20px',
-  },
-  card: {
-    display: 'block',
-    padding: '20px',
-    border: '1px solid #ccc',
-    borderRadius: '8px',
-    textDecoration: 'none',
-    color: 'black',
-    backgroundColor: '#f9f9f9',
-    transition: 'transform 0.2s',
-  },
-};
+function ToolGrid() {
+    const [tools, setTools] = useState(null);
+    const [error, setError] = useState(null);
+
+    useEffect(() => {
+        fetch(`${API_BASE}/app/tools`)
+            .then(res => {
+                if (!res.ok) throw new Error(`Backend returned ${res.status}`);
+                return res.json();
+            })
+            .then(setTools)
+            .catch(err => setError(err.message));
+    }, []);
+
+    if (error) return <p className="error">Could not load tools: {error}</p>;
+    if (tools === null) return <p className="muted">Loading tools...</p>;
+    if (tools.length === 0) return <p className="muted">No tools yet.</p>;
+
+    return (
+        <div className="tool-grid">
+            {tools.map(tool => <ToolCard tool={tool} key={tool.id} />)}
+        </div>
+    );
+}
+
+function App() {
+    return (
+        <Router>
+            <div className="app-container">
+                <h1>sschw.dev tools</h1>
+                <Routes>
+                    <Route path="/" element={<ToolGrid />} />
+                    <Route path="/tools/:id" element={<ToolDetail />} />
+                </Routes>
+            </div>
+        </Router>
+    );
+}
 
 export default App;
