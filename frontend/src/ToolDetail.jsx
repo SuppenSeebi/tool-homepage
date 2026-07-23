@@ -24,6 +24,20 @@ function formatErrorDetail(detail) {
     return JSON.stringify(detail);
 }
 
+// A tool whose whole result is one string (e.g. json-formatter's {"formatted": "..."}) wants
+// that string shown as-is, with real line breaks - not re-escaped into a literal "\n" inside a
+// JSON.stringify'd wrapper, which is what happened here (the formatted JSON was already
+// correct, only the *display* of it wasn't). Purely structural, no field-name convention
+// imposed on tool authors: any single-key object whose one value is a string renders as that
+// raw string; anything with more structure still renders as pretty-printed JSON, same as before.
+function renderOutput(output) {
+    const keys = Object.keys(output);
+    if (keys.length === 1 && typeof output[keys[0]] === 'string') {
+        return output[keys[0]];
+    }
+    return JSON.stringify(output, null, 2);
+}
+
 // Every tool shares the exact same contract (POST /run, JSON in, JSON out - see
 // backend/app/registry.py), so this one generic form works for any tool with zero per-tool
 // frontend code. A tool wanting a friendlier field-by-field form is a future enhancement, not
@@ -73,7 +87,7 @@ function RunTab({ toolId, example }) {
             <textarea id="run-input" value={input} onChange={e => setInput(e.target.value)} rows={10} />
             <button onClick={handleRun} disabled={busy}>{busy ? 'Running...' : 'Run'}</button>
             {err && <pre className="error">{err}</pre>}
-            {output && <pre className="output">{JSON.stringify(output, null, 2)}</pre>}
+            {output && <pre className="output">{renderOutput(output)}</pre>}
         </div>
     );
 }
