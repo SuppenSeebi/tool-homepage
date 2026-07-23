@@ -21,11 +21,13 @@ TOOLS_DIR = Path(__file__).parent / "tools"
 
 REQUIRED_META_KEYS = {
     "id", "name", "description", "tags", "language", "runtime", "sandbox", "dependencies",
-    # A working example request body for this tool's POST /run - the generic Run UI (same form
-    # for every tool, since every tool shares one JSON-in/JSON-out contract) has no other way to
-    # know a given tool's expected input shape. Required, not optional, so this can't quietly be
-    # skipped for a future tool - found the hard way when json-formatter shipped without one.
-    "example",
+    # Input schema for this tool's POST /run - a list of {name, label, type, default}. The
+    # generic Run UI (same form for every tool, since every tool shares one JSON-in/JSON-out
+    # contract) renders one real input per field and assembles them into the request body
+    # itself, so nobody hand-writes or escapes JSON to use a tool. Required, not optional, so
+    # this can't quietly be skipped for a future tool - this replaced an earlier "example"
+    # field (a whole example request body) that still made users hand-edit raw JSON themselves.
+    "fields",
 }
 
 # id -> {**META, "_source_file": <path>} - the source file path is kept out of list_tools()'s

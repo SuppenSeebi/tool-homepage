@@ -38,38 +38,49 @@ function renderOutput(output) {
     return JSON.stringify(output, null, 2);
 }
 
-// Every tool shares the exact same contract (POST /run, JSON in, JSON out - see
+// One real input per declared field type - deliberately small, only the types json-formatter
+// (today's only tool) actually needs. A future tool needing a type not listed here extends this
+// switch once, not once per tool that wants it.
+function FieldInput({ field, value, onChange }) {
+    const id = `field-${field.name}`;
+    if (field.type === 'textarea') {
+        return <textarea id={id} value={value} onChange={e => onChange(e.target.value)} rows={8} />;
+    }
+    if (field.type === 'number') {
+        return <input id={id} type="number" value={value} onChange={e => onChange(Number(e.target.value))} />;
+    }
+    if (field.type === 'boolean') {
+        return <input id={id} type="checkbox" checked={!!value} onChange={e => onChange(e.target.checked)} />;
+    }
+    return <input id={id} type="text" value={value} onChange={e => onChange(e.target.value)} />;
+}
+
+// Every tool shares the exact same wire contract (POST /run, JSON in, JSON out - see
 // backend/app/registry.py), so this one generic form works for any tool with zero per-tool
-// frontend code. A tool wanting a friendlier field-by-field form is a future enhancement, not
-// something every new tool has to earn by also writing its own frontend page.
-//
-// `example` (from the tool's registry metadata, required per-tool - see registry.py) pre-fills
-// the input with a working request body, since the generic form has no other way to convey a
-// given tool's expected shape (e.g. json-formatter needs {"text": "..."}, not the JSON object
-// to format directly - there'd be nothing left to validate if it were already parsed).
-function RunTab({ toolId, example }) {
-    const [input, setInput] = useState(() =>
-        example !== undefined ? JSON.stringify(example, null, 2) : '{\n  \n}'
+// frontend code - but "generic" means the *wire format* is uniform, not that the user has to
+// hand-write it. `fields` (required registry metadata per tool) describes real input fields;
+// this renders one input per field and assembles them into the request body itself, so nobody
+// hand-writes or escapes JSON to use a tool. This replaced an earlier version that pre-filled a
+// single raw-JSON textarea from an "example" body - technically generic, but meant manually
+// editing/escaping JSON-inside-JSON for a tool like json-formatter, which is exactly the
+// friction this exists to remove.
+function RunTab({ toolId, fields = [] }) {
+    const [values, setValues] = useState(() =>
+        Object.fromEntries(fields.map(f => [f.name, f.default]))
     );
     const [output, setOutput] = useState(null);
     const [err, setErr] = useState(null);
     const [busy, setBusy] = useState(false);
 
+    const setField = (name, value) => setValues(v => ({ ...v, [name]: value }));
+
     const handleRun = async () => {
         setBusy(true); setErr(null); setOutput(null);
-        let body;
-        try {
-            body = JSON.parse(input);
-        } catch {
-            setErr('Input is not valid JSON.');
-            setBusy(false);
-            return;
-        }
         try {
             const res = await fetch(`${API_BASE}/app/tools/${toolId}/run`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(body),
+                body: JSON.stringify(values),
             });
             const data = await res.json();
             if (!res.ok) throw new Error(data.detail ? formatErrorDetail(data.detail) : `HTTP ${res.status}`);
@@ -83,8 +94,12 @@ function RunTab({ toolId, example }) {
 
     return (
         <div className="run-tab">
-            <label htmlFor="run-input">Input (JSON)</label>
-            <textarea id="run-input" value={input} onChange={e => setInput(e.target.value)} rows={10} />
+            {fields.map(field => (
+                <div className="run-field" key={field.name}>
+                    <label htmlFor={`field-${field.name}`}>{field.label}</label>
+                    <FieldInput field={field} value={values[field.name]} onChange={v => setField(field.name, v)} />
+                </div>
+            ))}
             <button onClick={handleRun} disabled={busy}>{busy ? 'Running...' : 'Run'}</button>
             {err && <pre className="error">{err}</pre>}
             {output && <pre className="output">{renderOutput(output)}</pre>}
@@ -170,7 +185,7 @@ function ToolDetail() {
                 ))}
             </div>
             <div className="tab-content">
-                {tab === 'run' && <RunTab toolId={tool.id} example={tool.example} />}
+                {tab === 'run' && <RunTab toolId={tool.id} fields={tool.fields} />}
                 {tab === 'setup' && <SetupTab tool={tool} />}
                 {tab === 'source' && <SourceTab toolId={tool.id} />}
             </div>

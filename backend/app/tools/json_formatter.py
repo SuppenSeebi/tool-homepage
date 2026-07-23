@@ -21,11 +21,14 @@ META = {
     "runtime": "Python 3.11",
     "sandbox": "none (reviewed & committed)",
     "dependencies": [],
-    # Frontend pre-fills the Run tab's input with this - the generic run UI (any tool, JSON
-    # in/out) has no way to know a given tool's expected shape otherwise. This one specifically
-    # needs {"text": "..."} (a JSON *string* to validate), not the object to format directly -
-    # that's the whole point of the tool (catching malformed JSON with a useful error).
-    "example": {"text": '{"hello": "world", "nested": {"a": 1}}', "indent": 2},
+    # Frontend renders one real input per field (see registry.py) and assembles them into the
+    # POST /run body itself - the user never hand-writes or escapes JSON. "text" is deliberately
+    # a plain multi-line field (raw, unescaped) even though the wire request wraps it in
+    # {"text": "..."} - that wrapping is the frontend's job, not something authored here.
+    "fields": [
+        {"name": "text", "label": "JSON text to format", "type": "textarea", "default": '{"hello": "world", "nested": {"a": 1}}'},
+        {"name": "indent", "label": "Indent (spaces)", "type": "number", "default": 2},
+    ],
 }
 
 

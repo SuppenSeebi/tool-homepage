@@ -87,8 +87,8 @@ contract, the frontend, or existing tools changes.
 ### D.2 Tool metadata — powers tags *and* the language/setup/code views
 
 One registry entry per tool, auto-discovered, is the single source of truth for all of:
-tag-based grouping, the language badge, the setup summary, and the source view Sebastian asked
-for. Shape (exact field names TBD at implementation time):
+tag-based grouping, the language badge, the setup summary, the source view, and (see below) the
+Run form itself. Actual shape as built (`backend/app/registry.py`'s `REQUIRED_META_KEYS`):
 
 ```json
 {
@@ -97,12 +97,24 @@ for. Shape (exact field names TBD at implementation time):
   "description": "Formats and validates JSON text.",
   "tags": ["text", "json", "dev"],
   "language": "python",
-  "runtime": "Python 3.12",
+  "runtime": "Python 3.11",
   "sandbox": "none (reviewed & committed)",
-  "dependencies": ["orjson==3.10.7"],
-  "sourcePath": "backend/app/tools/json_formatter.py"
+  "dependencies": [],
+  "fields": [
+    {"name": "text", "label": "JSON text to format", "type": "textarea", "default": "..."},
+    {"name": "indent", "label": "Indent (spaces)", "type": "number", "default": 2}
+  ]
 }
 ```
+
+`fields` went through one revision after shipping: the first version was a single `example` key
+(a whole example POST body), pre-filling one raw-JSON textarea in the Run tab. That was still
+technically generic, but meant hand-writing/escaping JSON-inside-JSON to use a tool with a
+string field (typing `{"text": "{\"a\": 1}"}` by hand) — exactly the friction the generic-form
+idea was supposed to remove, caught immediately by actually using it live. `fields` fixes this
+properly: one real input per field, assembled into the request body by the frontend, never
+typed as raw JSON by a user at all. `sourcePath` never became a real registry field either — the
+source view fetches from a dedicated `GET /app/tools/{id}/source` endpoint instead (D.3).
 
 `sandbox` is honest about today's reality (everything ships through review + commit, same trust
 model as this session's own work) rather than claiming a sandbox that doesn't exist yet — it
@@ -114,17 +126,24 @@ externally, never written into the file. This isn't just a nice transparency fea
 forcing function for the same "no secrets in tool code" principle Section F needs anyway for
 AI-authored tools later.
 
-### D.3 Frontend: language badge, setup view, code view
+### D.3 Frontend: run form, language badge, setup view, code view
 
 Requested directly: "always see the underlying language used for a tool, a small/brief automated
 description view you can switch to of its setup (e.g. sandbox + python + dependency XYZ) and a
-view you can switch to that shows the actual code of the tool." Per tool, on the dark-HUD card:
+view you can switch to that shows the actual code of the tool." Per tool:
 - A persistent language badge (always visible, not hidden behind a toggle).
+- A **Run tab** — one real input per `fields` entry (textarea/number/boolean/text), assembled
+  into the `POST /run` body by the frontend. Output rendering has one deliberate special case:
+  a single-key object whose one value is a string (e.g. `{"formatted": "..."}`) renders as that
+  raw string, real line breaks intact, rather than being re-escaped inside a `JSON.stringify`'d
+  wrapper — otherwise a tool's own nicely-formatted output comes out unreadable. Purely
+  structural (no field-name convention imposed); anything with more structure still renders as
+  pretty-printed JSON.
 - A switchable **setup view** — auto-rendered from the registry entry (`runtime`, `sandbox`,
   `dependencies`), not hand-written per tool, so it can never drift from reality the way a
   hand-maintained description could.
-- A switchable **source view** — the tool's actual file content, read directly from
-  `sourcePath`, syntax-highlighted. Read-only, no edit-in-browser.
+- A switchable **source view** — the tool's actual file content, fetched from
+  `GET /app/tools/{id}/source`. Plain `<pre>`, not syntax-highlighted yet (Phase 3b territory).
 
 All three read from the exact same registry entry as tag grouping — one source of truth, same
 principle as everything else built this session.
@@ -201,7 +220,7 @@ enforce the boundary regardless of what any prompt says.
 | 1 | Backend: gateway + auto-discovery registry (Python tools in-process, contract designed for future non-Python tools per D.1) | **Done** (2026-07-23) — `backend/app/registry.py` scans `app/tools/*.py` for `ROUTER`+`META`, mounts each at `/app/tools/{id}`, exposes `GET /app/tools` and `GET /app/tools/{id}/source`. Old `CharCounter.py` removed (Sebastian: no need to keep the old ones). Verified via `TestClient` (real HTTP requests, not just import checks) against a proper `win-amd64` venv — the first local venv attempt used an MSYS2/MinGW Python with no compatible wheels for `pydantic-core` and had to be redone against a standard python.org install. Also added a root `.gitignore` (didn't exist before — caught by `__pycache__` showing up untracked). |
 | 1.5 | First tool proving the pattern: JSON Formatter (Python, in-process) | **Done** (2026-07-23) — `backend/app/tools/json_formatter.py`. Confirmed via `TestClient`: valid JSON formats correctly (key order preserved), invalid JSON returns a real 400 with a useful message. |
 | 2 | Remaining initial tool set — JWT Decoder (Node), QR Code Generator (Go), Hash Calculator (Rust), per Section E | Not started — these are the first real test of the polyglot contract (separate containers behind the gateway, per D.1), not just Python in-process |
-| 3a | Frontend: registry-driven functional scaffold — tag/language display, generic Run (JSON in/out, works for any tool via the shared contract) / Setup (auto-rendered from registry metadata) / Source (raw file content) tabs | **Done** (2026-07-23) — `App.jsx`, `ToolDetail.jsx`, `apiBase.js` (single configurable backend URL, replacing the literal that used to live inside `CharCounter.jsx`). Deliberately plain CSS — verified via `npm run build` + `npm run lint`, both clean. Old `CharCounter.jsx`/`PdfMerger.jsx` removed. |
+| 3a | Frontend: registry-driven functional scaffold — tag/language display, field-based Run form (assembled into the shared JSON contract, not hand-typed) / Setup (auto-rendered from registry metadata) / Source tabs | **Done** (2026-07-24, after one real revision) — `App.jsx`, `ToolDetail.jsx`, `apiBase.js` (single configurable backend URL, replacing the literal that used to live inside `CharCounter.jsx`). Deployed live and used for real, which caught three bugs in order: (1) `[object Object]` error display — FastAPI validation errors put an array in `detail`, not a string; (2) formatted output re-escaped into literal `\n` text by naively `JSON.stringify`-ing the whole response; (3) the original raw-JSON-textarea Run UI itself being the wrong design — replaced with `fields`-driven real inputs per D.2/D.3. Deliberately plain CSS — verified via `npm run build` + `npm run lint` (clean) and `TestClient` after each fix. Old `CharCounter.jsx`/`PdfMerger.jsx` removed. |
 | 3b | Frontend: actual dark-HUD visual design pass on top of 3a's working scaffold | Not started |
 | 4 | Wire embed link from `landing-homepage`'s `CURRENT SYSTEM` header cell to the redesigned site | Not started |
 | 5 | Deploy to new CT | **Done** (2026-07-23) — separate Proxmox CT (2 cores, 4GB RAM, 2GB swap, 20GB disk), unprivileged, `nesting`/`keyctl` features + `lxc.apparmor.profile: unconfined` (needed for Docker-in-LXC's `runc` sysctl write — a known issue on unprivileged CTs, not specific to this app). DHCP + FritzBox reservation for a stable IP. `deploy.sh` fixed (`docker-compose` → `docker compose`, the standalone binary isn't installed by Debian's official Docker steps anymore) and `docker-compose.yml`'s obsolete `version` key removed, both caught live during this deploy. Confirmed reachable through the real domain via Nginx Proxy Manager routing pointed at the new CT — old deployment on the shared Debian VM not yet removed (next step, now that the new one's confirmed live). |
