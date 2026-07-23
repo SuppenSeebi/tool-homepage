@@ -6,12 +6,12 @@
 set -e
 
 echo "🛑 Stoppe Docker Compose..."
-docker-compose down
+docker compose down
 
 echo "🔄 Pulle neueste Git Änderungen..."
 git pull
 
 echo "🚀 Starte Docker Compose mit Build im Hintergrund..."
-docker-compose up --build -d
+docker compose up --build -d
 
 echo "✅ Deployment abgeschlossen."
